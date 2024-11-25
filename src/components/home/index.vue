@@ -8,10 +8,14 @@
             <el-main>
                 <el-row>
                     <el-col :span="12">
-                        Hello
+                        <el-card style="max-width: 480px">
+                            <p v-for="o in 4" :key="o" class="text item">{{ 'List item ' + o }}</p>
+                        </el-card>
                     </el-col>
                     <el-col :span="12">
-                        hello
+                        <el-card style="max-width: 480px">
+                            <p v-for="o in 4" :key="o" class="text item">{{ 'List item ' + o }}</p>
+                        </el-card>
                     </el-col>
                 </el-row>
             </el-main>
