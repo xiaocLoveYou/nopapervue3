@@ -34,3 +34,11 @@ export const get_todayAttendance = () => {
 export const student_createLeaves = (data) => {
     return api.post('/api/attendance/studentcreateleavve', data)
 }
+
+export const upload_attendance = (data) => {
+    return api.post('/api/attendance/classattendance', data);
+}
+
+export const getleaveserror = () => {
+    return api.get('/api/analysis/getleaveserror');
+}

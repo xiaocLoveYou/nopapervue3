@@ -3,7 +3,11 @@
         <el-container>
             <el-header
                 style="display: flex; padding-left: 2.3%; align-items: center; background: #2E59A7; justify-content: space-between">
-                <h1 style="color: #fff">基于大数据决策系统的无纸化请假系统</h1>
+                <el-popconfirm title="打开可视化大屏" @confirm="window_href" style="padding-left: 30%">
+                    <template #reference>
+                        <h1 style="color: #fff">基于大数据决策系统的无纸化请假系统</h1>
+                    </template>
+                </el-popconfirm>
                 <el-popconfirm title="退出登录" @confirm="logout">
                     <template #reference>
                         <el-image :src="img" style="height: 70%; border-radius: 50%"></el-image>
@@ -41,13 +45,18 @@
                                             {{ currentTime }}
                                         </el-descriptions-item>
                                         <el-descriptions-item label="班级总人数:">
-                                            {{students.length}} 人
+                                            {{ students.length }} 人
                                         </el-descriptions-item>
                                         <el-descriptions-item label="提交请假申请">
-                                            <el-button type="primary" :disabled="info.role!='normal'" @click="leavesVisible = !leavesVisible">提交请假申请</el-button>
+                                            <el-button type="primary" :disabled="info.role!='normal'"
+                                                       @click="leavesVisible = !leavesVisible">提交请假申请
+                                            </el-button>
                                         </el-descriptions-item>
                                         <el-descriptions-item label="审批请假申请">
-                                            <el-button type="success" :disabled="info.role=='normal'" @click="checkVisible = !checkVisible">审批请假申请</el-button>
+                                            <el-button type="success"
+                                                       :disabled="info.role=='normal' || students.length == todayAttendance.length"
+                                                       @click="checkVisible = !checkVisible">提交考勤状态
+                                            </el-button>
                                         </el-descriptions-item>
                                     </el-descriptions>
                                 </el-col>
@@ -74,7 +83,7 @@
                                     <h2>签到情况分析</h2>
                                 </div>
                             </template>
-                            <el-empty description="暂无数据" v-show="emptyvis" />
+                            <el-empty description="暂无数据" v-show="emptyvis"/>
                             <div id="chart2" style="width: 100%; height: 38vh;margin-top: -5%" v-show="!emptyvis"></div>
                         </el-card>
                     </el-col>
@@ -100,7 +109,9 @@
                                     <el-table-column property="resion" label="请假原因"/>
                                     <el-table-column property="tag" label="状态标签" width="100">
                                         <template #default="scope">
-                                            <el-tag :type="scope.row.tag === '已审批' ? 'primary' : scope.row.tag == '未审批'? 'error': 'success'" disable-transitions>
+                                            <el-tag
+                                                :type="scope.row.tag === '已审批' ? 'primary' : scope.row.tag == '未审批'? 'error': 'success'"
+                                                disable-transitions>
                                                 {{ scope.row.tag }}
                                             </el-tag>
                                         </template>
@@ -115,16 +126,16 @@
 
         <!--    学生请假弹窗    -->
         <el-dialog v-model="leavesVisible" title="提交学生请假申请" width="800" draggable>
-<!--            <span>提交学生请假申请</span>-->
+            <!--            <span>提交学生请假申请</span>-->
             <el-form :model="leavesform" class="demo-form-inline">
                 <el-form-item label="请假分类">
                     <el-radio-group v-model="leavesform.status">
-                        <el-radio :value="3">病假</el-radio>
-                        <el-radio :value="4">事假</el-radio>
+                        <el-radio :value="'3'">病假</el-radio>
+                        <el-radio :value="'4'">事假</el-radio>
                     </el-radio-group>
                 </el-form-item>
                 <el-form-item label="请假原因">
-                    <el-input v-model="leavesform.resion" placeholder="请输入请假原因" clearable />
+                    <el-input v-model="leavesform.resion" placeholder="请输入请假原因" clearable/>
                 </el-form-item>
                 <el-form-item label="请假时间">
                     <el-date-picker
@@ -146,32 +157,37 @@
 
 
         <!--    老师审批弹窗    -->
-        <el-dialog v-model="checkVisible" title="老师审批请假申请" width="800" draggable>
+        <el-dialog v-model="checkVisible" title="老师提交全班考勤状态" width="800" draggable>
             <!--            <span>提交学生请假申请</span>-->
-            <el-form :model="leavesform" class="demo-form-inline">
-                <el-form-item label="请假分类">
-                    <el-radio-group v-model="leavesform.status">
-                        <el-radio :value="3">病假</el-radio>
-                        <el-radio :value="4">事假</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="请假原因">
-                    <el-input v-model="leavesform.resion" placeholder="请输入请假原因" clearable />
-                </el-form-item>
-                <el-form-item label="请假时间">
-                    <el-date-picker
-                        v-model="leavesform.date"
-                        type="date"
-                        placeholder="请选择请假时间"
-                        :disabled-date="dateDisabler"
-                        clearable
-                    />
-                </el-form-item>
-            </el-form>
+
+            <el-collapse>
+                <el-collapse-item :title="item.username" v-for="(item, index) in todayAttendance" :key="index">
+                    <div v-show="item.resion != null">
+                        <span style="font-weight: bold">请假原因:</span>
+                        <div>{{ item.resion }}</div>
+                        <el-radio-group v-model="item.checked">
+                            <el-radio :value="false">拒批</el-radio>
+                            <el-radio :value="true">批准</el-radio>
+                        </el-radio-group>
+                    </div>
+                    <el-empty description="暂无数据" v-show="item.resion == null"/>
+                </el-collapse-item>
+                <el-empty description="暂无请假数据" v-show="todayAttendance.length == 0 && getleaveserror.length == 0"/>
+                <el-tag type="danger" v-for="(item,index) in getleaveserror" :key="index" style="margin: 10px" v-show="item.status=='正常'"> {{ item.tag }}</el-tag>
+            </el-collapse>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button @click="leavesVisible = false">取消</el-button>
-                    <el-button type="primary" @click="leaves">提交</el-button>
+                    <el-button @click="checkVisible = false">取消</el-button>
+                    <el-popover
+                        placement="top-start"
+                        title="提示"
+                        :width="250"
+                        trigger="hover"
+                        content="仅审批请假学生即可，提交考勤后其余学生自动标记到校.">
+                        <template #reference>
+                            <el-button type="primary" @click="checks">提交</el-button>
+                        </template>
+                    </el-popover>
                 </div>
             </template>
         </el-dialog>
@@ -182,7 +198,15 @@
 
 import router from "@/router";
 import img from "@/assets/img.png"
-import {attendancelist, get_chart1, get_chart2, get_students, info, student_createLeaves} from "@/API/auth";
+import {
+    attendancelist,
+    get_chart1,
+    get_chart2,
+    get_students,
+    get_todayAttendance, getleaveserror,
+    info,
+    student_createLeaves, upload_attendance
+} from "@/API/auth";
 import headimg from "@/assets/headimg_dl.png"
 import * as echarts from 'echarts';
 import {ElMessage} from "element-plus";
@@ -192,6 +216,7 @@ export default {
     data() {
         return {
             ip: "",
+            checkvalue: [],
             img: img,
             select_date: "2024-10-01",
             avator: headimg,
@@ -206,7 +231,11 @@ export default {
                 name: "",
             },
             emptyvis: false,
-            checkVisible: false
+            checkVisible: false,
+            data: [],
+            todayAttendance: [],
+            isCheck: false,
+            getleaveserror: []
         };
     },
     methods: {
@@ -295,15 +324,27 @@ export default {
                 console.log(res)
                 this.students = res.data
             })
+            get_todayAttendance().then(res => {
+                console.log(res)
+                this.todayAttendance = res.data.map(item => {
+                    item.checked = false
+                    return item
+                });
+                this.isCheck = this.students.length == res.data.length
+            })
+            getleaveserror().then(res => {
+                console.log(res)
+                this.getleaveserror = res.data
+            })
             this.vischart1()
             this.getattendancelist()
         },
-        vischart1(){
+        vischart1() {
             get_chart1().then(res => {
-                console.log(res)
+                console.log(12312312313, res)
                 var dom = document.getElementById('chart2');
                 var myChart2 = echarts.init(dom);
-                if (res.code != 200) {
+                if (res.code != 200 || res.data.length == 0) {
                     this.emptyvis = true
                     return
                 }
@@ -419,15 +460,14 @@ export default {
         },
         leaves() {
             console.log(this.leavesform);
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-            var date = formatDate(this.leavesform.date);
+            var date = this.formatDate(this.leavesform.date);
             var status = this.leavesform.status;
             var resion = this.leavesform.resion;
+            console.log({
+                date: date,
+                status: status,
+                resion: resion,
+            })
             student_createLeaves({
                 date: date,
                 status: status,
@@ -444,6 +484,48 @@ export default {
                 this.leavesVisible = false;
             })
         },
+        checks() {
+            console.log(this.todayAttendance)
+            console.log(this.students);
+            let user_ids = []
+            let statuses = []
+            let date = this.formatDate(new Date());
+            let resions = []
+
+            this.students.forEach(student => {
+                var index = this.todayAttendance.findIndex(item => item.user_id == student.user_id);
+
+                if (index == -1) {
+                    user_ids.push(student.user_id)
+                    statuses.push('0')
+                    resions.push(null)
+                } else {
+                    user_ids.push(student.user_id)
+                    statuses.push(this.todayAttendance[index] == "3" ? '1' : '2')
+                    resions.push(this.todayAttendance[index].resion)
+                }
+            })
+
+            console.log(user_ids, statuses, date, resions)
+
+            upload_attendance({
+                user_ids: user_ids,
+                statuses: statuses,
+                date: date,
+                resions: resions,
+            }).then(res => {
+                console.log(res);
+                if (res.code == 200) {
+                    ElMessage({
+                        message: '提交成功',
+                        type: 'success',
+                    })
+                    window.location.reload();
+                }
+
+            })
+
+        },
         getattendancelist() {
             attendancelist().then(res => {
                 console.log(res)
@@ -458,9 +540,18 @@ export default {
                 this.tableData = this.tableData.sort((a, b) => new Date(b.date) - new Date(a.date))
             })
         },
+        window_href() {
+          window.open('http://111.231.16.133:5231/')
+        },
         logout() {
             console.log(123123123)
             router.back()
+        },
+        formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
     },
     created() {
