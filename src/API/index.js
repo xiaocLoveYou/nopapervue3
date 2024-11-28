@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: "http://111.231.16.133:5000", // 基础 URL，根据实际情况修改
-    timeout: 5000,  // 请求超时
+    timeout: 20000,  // 请求超时
 });
 
 // 请求拦截器
